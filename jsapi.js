@@ -8,13 +8,18 @@ window.JSAPI = window.JSAPI || (function() {
 
 	var 
 
-		typeIndex,
+		methodType,
 
 		/* map containing all loaded apis */
 		apiMap = {},
 
 		/* default list of method types to attached to API endpoints */
-		methodTypes = ["create","read","update","delete"],
+		methodTypes = {
+			"create":true,
+			"read":true,
+			"update":true,
+			"delete":true
+		},
 
 		/* prevent calls to console.log from throwing an error in browsers that don't support it */
 		console = window.console || {log:function(){ return; }},
@@ -246,6 +251,7 @@ window.JSAPI = window.JSAPI || (function() {
 	 ***/
 	function API(options) {
 		var i;
+		this.methodTypes = methodTypes;
 		this.options = {
 			apiName: "api" + new Date().getTime(),
 			domain: "",
@@ -260,8 +266,12 @@ window.JSAPI = window.JSAPI || (function() {
 
 		if (this.options.methodTypes instanceof Array && this.options.methodTypes.length > 0) {
 			
-			/* Create new prototype methods */
 			for (i=0;i<this.options.methodTypes.length;i++) {
+
+				/* add method type to internal list of methodTypes  */
+				this.methodTypes[this.options.methodTypes[i]] = true;
+
+				/* Create new prototype method */
 				if (EndPoint.prototype[this.options.methodTypes[i]] === undefined) {
 					EndPoint.prototype[this.options.methodTypes[i]] = EndPointMethodFactory(this.options.methodTypes[i]);
 				}
@@ -274,7 +284,10 @@ window.JSAPI = window.JSAPI || (function() {
 	 * param: endpoint path
 	 */
 	API.prototype.getURL = function(epURL) {
-		var url = this.options.domain + "/" + this.options.path + "/" + epURL;
+		var url = this.options.domain + "/" + this.options.path;
+		if (epURL != undefined && epURL != "") {
+			url += "/" + epURL;
+		}
 		url = url.replace(/\/{2,}/,"\/");
 		return url;
 
@@ -287,7 +300,17 @@ window.JSAPI = window.JSAPI || (function() {
 		* options: includes endpoint path and configurations for each method type
 	 */
 	API.prototype.add = function(name, options) {
-		this[name] = new EndPoint(this, options);
+		if (this.methodTypes[name]) {
+			/* Allow CRUD and custom methods to be called directly to the API object. */
+			this[name + "_endpoint"] = new EndPoint(this, options);
+			this[name] = function() {
+				this[name + "_endpoint"][name](arguments);
+			}
+
+			
+		} else {
+			this[name] = new EndPoint(this, options);
+		}
 	};
 
 	/*
@@ -308,7 +331,7 @@ window.JSAPI = window.JSAPI || (function() {
 
 		/* init api object & add to apis map */
 		api = new API(config.options);
-		apiMap[config.options.apiName] = api.options.name;
+		apiMap[api.options.apiName] = api;
 
 
 		/* generate api endpoints */
@@ -324,8 +347,10 @@ window.JSAPI = window.JSAPI || (function() {
 	}
 
 	/* Create CRUD methods */
-	for (typeIndex=0;typeIndex<methodTypes.length;typeIndex++) {
-		EndPoint.prototype[methodTypes[typeIndex]] = EndPointMethodFactory(methodTypes[typeIndex]);
+	for (methodType in methodTypes) {
+		if (hasOwnProp.call(methodTypes, methodType)) {
+			EndPoint.prototype[methodType] = EndPointMethodFactory(methodType);
+		}
 	}
 
 	/* EXPOSE PUBLIC MEMBERS */
