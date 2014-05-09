@@ -9,43 +9,43 @@ Each Endpoint contains four default methods: create(), read(), update(), delete(
 
 Usage:
 
-var newAPI = window.JSAPI.create(APIConfiguration);
-newAPI.endPointName.read({
-	urlData: {
-		"url1": "data"
-	},
-	paramData: {
-		"param1": "data"
-	},
-	callbacks: {
-		"onload": function() {},
-		"onerror": function() {}
-	}
-})
+	var newAPI = window.JSAPI.create(APIConfiguration);
+	newAPI.endPointName.read({
+		urlData: {
+			"url1": "data"
+		},
+		paramData: {
+			"param1": "data"
+		},
+		callbacks: {
+			"onload": function() {},
+			"onerror": function() {}
+		}
+	})
 
-APIConfiguration must be a JSON object that defines each endpoint in the API in this format:
-{
-	"options": {
-		"apiName": "APIContent",
-		"domain": "localhost",
-		"path": "api",
-		"methodTypes":[] //optional array of endpoint methods to use in addition to CRUD methods
-	},
-	"endpoints": {
-		"endpoint1": {
-			"pathTemplate":"",
-			"templateParams": [],
-			"update": {
-				"method": "POST",
-				"params": []
-			},
-			"read": {
-				"method": "GET"
-			},
-			"delete": {
-				"method": "DELETE",
-				"params": []
+	APIConfiguration must be a JSON object that defines each endpoint in the API in this format:
+	{
+		"options": {
+			"apiName": "APIContent",
+			"domain": "localhost",
+			"path": "api",
+			"methodTypes":[] //optional array of endpoint methods to use in addition to CRUD methods
+		},
+		"endpoints": {
+			"endpoint1": {
+				"pathTemplate":"",
+				"templateParams": [],
+				"update": {
+					"method": "POST",
+					"params": []
+				},
+				"read": {
+					"method": "GET"
+				},
+				"delete": {
+					"method": "DELETE",
+					"params": []
+				}
 			}
 		}
 	}
-}
