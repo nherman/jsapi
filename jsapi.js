@@ -1,5 +1,6 @@
 /*
-JSAPI
+JSAPI v0.1 (https://github.com/nherman/jsapi)
+MIT License: https://github.com/nherman/jsapi/blob/master/LICENSE
 
 Initializes API objects and stores them in a globally accessible map object
 called window.JSAPI.apis.  Each API consists of a collection of Endpoints.
