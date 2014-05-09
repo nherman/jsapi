@@ -1,0 +1,59 @@
+<html>
+<head>
+<!-- USAGE EXAMPLE -->
+
+<!-- init api loader -->
+<script src="JSAPI.js"></script>
+<!-- load api configs -->
+<script src="config_template.js"></script>
+</head>
+
+<body>
+
+	<script>
+
+	/* Instantiate all APIs */
+		window.MYAPIS = {};
+		for (var api in window.API_CONFIG) {
+			window.MS[api] = JSAPI.create(window.API_CONFIG[api]);
+		}
+
+	/* read and write API1 */
+		var options = {
+			urlData: {
+				"urlparam":"exampleData"
+			},
+			paramData: {
+				"readParam1": "readme",
+				"readParam2": "readme2"
+			}
+			callbacks: {
+				onload: function() {
+					if (this.status == 200) {
+						console.log(this.responseText);
+					}
+				},
+				onerror: function() {
+					console.log(arguments);
+				}
+			}
+		}
+
+		var readResponse = MYAPI.api1.endpoint1.read(options));
+
+		options.paramData = {
+				"updateParam1": "changeme",
+				"updateParam2": "changeme2"
+		}
+		
+		var updateResponse = MYAPI.api1.endpoint1.update(options));
+
+
+
+	/* acquire Server Sent Events stream from API2 */
+		var stream = MYAPI.api1.notify.stream({}));
+
+	</script>
+
+</body>
+</html>
