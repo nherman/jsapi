@@ -12,13 +12,8 @@
 
 	<script>
 
-	/* Instantiate all APIs */
-		window.MYAPIS = {};
-		for (var api in window.API_CONFIG) {
-			window.MYAPIS[api] = JSAPI.create(window.API_CONFIG[api]);
-		}
 
-	/* read and write API1 */
+		/* prepare API call data & callbacks */
 		var options = {
 			headerData: {
 				"Authentication": "Bearer XXX-XXX-XXX-XXXXX-XXX-XXX-XX"
@@ -42,6 +37,7 @@
 			}
 		}
 
+		/* call API endpoint */
 		var readResponse = MYAPIS.api1.endpoint1.read(options);
 
 		options.paramData = {
@@ -49,11 +45,17 @@
 				"updateParam2": "changeme2"
 		}
 		
+		/* each endpoint can have multiple methods */
 		var updateResponse = MYAPIS.api1.endpoint1.update(options);
 
 
 
-	/* acquire Server Sent Events stream from API2 */
+		/*
+		 * CRUD methods are standard, but others can be defined.
+		 * Endpoints that have the same name as a valid method are mapped to the api object.
+	 	 */
+
+		/* acquire Server Sent Events stream from API2 */
 		var stream = MYAPIS.api2.stream({
 			"callbacks": {
 				"onmessage": function() {
