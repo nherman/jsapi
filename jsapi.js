@@ -68,7 +68,6 @@ window.JSAPI = window.JSAPI || (function() {
 
 		if (type === "stream") {
 
-console.log("stream");
 			/* Server Sent Events method
 			 * param: data = {
 			 *		callbacks: {}
@@ -80,7 +79,6 @@ console.log("stream");
 					url="";
 
 
-console.log(options);
 				if (options === undefined ||
 						data === undefined ||
 						!hasOwn(data.callbacks)) {
@@ -93,7 +91,6 @@ console.log(options);
 				*/
 				url = this.getURL(data.urlData);
 
-console.log(url);
 
 				if (!!window.EventSource) {
 					/* init EventSource Object */
@@ -306,7 +303,7 @@ console.log(url);
 	 */
 	API.prototype.add = function(name, options) {
 		if (this.methodTypes[name]) {
-			/* Allow CRUD and custom methods to be called directly to the API object. */
+			/* Alias CRUD and custom methods on the API object. */
 			this[name + "_endpoint"] = new EndPoint(this, options);
 			this[name] = function() {
 				this[name + "_endpoint"][name].apply(this[name + "_endpoint"],arguments);
