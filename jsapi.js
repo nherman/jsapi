@@ -68,6 +68,7 @@ window.JSAPI = window.JSAPI || (function() {
 
 		if (type === "stream") {
 
+console.log("stream");
 			/* Server Sent Events method
 			 * param: data = {
 			 *		callbacks: {}
@@ -79,17 +80,20 @@ window.JSAPI = window.JSAPI || (function() {
 					url="";
 
 
+console.log(options);
 				if (options === undefined ||
 						data === undefined ||
 						!hasOwn(data.callbacks)) {
 					return;
 				}
 
+
 				/*
 					Merge pathTemplate string with urlData to create the endpoint URL
 				*/
 				url = this.getURL(data.urlData);
 
+console.log(url);
 
 				if (!!window.EventSource) {
 					/* init EventSource Object */
@@ -240,7 +244,7 @@ window.JSAPI = window.JSAPI || (function() {
 			}
 		}
 
-		return location.protocol + "//" + this.api.getURL(path);
+		return this.api.getURL(path);
 	};
 
 	/***
@@ -284,12 +288,13 @@ window.JSAPI = window.JSAPI || (function() {
 	 * param: endpoint path
 	 */
 	API.prototype.getURL = function(epURL) {
-		var url = this.options.domain + "/" + this.options.path;
+		var url = this.options.domain + "/" + this.options.path,
+			protocol = this.protocol || "http";
 		if (epURL != undefined && epURL != "") {
 			url += "/" + epURL;
 		}
 		url = url.replace(/\/{2,}/,"\/");
-		return url;
+		return protocol + "://" + url;
 
 	};
 
@@ -304,10 +309,8 @@ window.JSAPI = window.JSAPI || (function() {
 			/* Allow CRUD and custom methods to be called directly to the API object. */
 			this[name + "_endpoint"] = new EndPoint(this, options);
 			this[name] = function() {
-				this[name + "_endpoint"][name](arguments);
+				this[name + "_endpoint"][name].apply(this[name + "_endpoint"],arguments);
 			}
-
-			
 		} else {
 			this[name] = new EndPoint(this, options);
 		}

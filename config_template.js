@@ -4,7 +4,7 @@ window.API_CONFIG = window.API_CONFIG || {};
 window.API_CONFIG.api1 = {
 	"options": {
 		"apiName": "API1",
-		"domain": "domain-for-api1.com",
+		"domain": "localhost",
 		"path": "api1"				//prepend this value to the endpoint path
 	},
 	"endpoints": {
@@ -16,18 +16,18 @@ window.API_CONFIG.api1 = {
 				"params": ["updateParam1", "updateParam2"]
 			},
 			"read": {
-				"method": "GET"
+				"method": "GET",
 				"params": ["readParam1", "readParam2"]
 			}
 		},
 		"endpoint2": {
-			"pathTemplate":"/crud/ep2"
+			"pathTemplate":"/crud/ep2",
 			"create": {
 				"method": "POST",
 				"params": ["createParam1", "createParam2"]
 			},
 			"read": {
-				"method": "GET"
+				"method": "GET",
 				"params": ["readParam1", "readParam2"]
 			},
 			"delete": {
@@ -46,9 +46,11 @@ window.API_CONFIG.api2 = {
 		"methodTypes":["stream"]	//optional array of endpoint methods to use in addition to CRUD methods
 	},
 	"endpoints": {
-		"notify": {
+		"stream": {
 			"pathTemplate":"/stream",
-			"stream": {}
+			"stream": {
+				"myoption": 1
+			}
 		}
 	}
 };

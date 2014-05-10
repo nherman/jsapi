@@ -15,7 +15,7 @@
 	/* Instantiate all APIs */
 		window.MYAPIS = {};
 		for (var api in window.API_CONFIG) {
-			window.MS[api] = JSAPI.create(window.API_CONFIG[api]);
+			window.MYAPIS[api] = JSAPI.create(window.API_CONFIG[api]);
 		}
 
 	/* read and write API1 */
@@ -26,7 +26,7 @@
 			paramData: {
 				"readParam1": "readme",
 				"readParam2": "readme2"
-			}
+			},
 			callbacks: {
 				onload: function() {
 					if (this.status == 200) {
@@ -39,19 +39,25 @@
 			}
 		}
 
-		var readResponse = MYAPI.api1.endpoint1.read(options));
+		var readResponse = MYAPIS.api1.endpoint1.read(options);
 
 		options.paramData = {
 				"updateParam1": "changeme",
 				"updateParam2": "changeme2"
 		}
 		
-		var updateResponse = MYAPI.api1.endpoint1.update(options));
+		var updateResponse = MYAPIS.api1.endpoint1.update(options);
 
 
 
 	/* acquire Server Sent Events stream from API2 */
-		var stream = MYAPI.api1.notify.stream({}));
+		var stream = MYAPIS.api2.stream({
+			"callbacks": {
+				"onmessage": function() {
+					console.log(arguments);
+				}
+			}
+		});
 
 	</script>
 
