@@ -11,6 +11,10 @@ window.API_CONFIG.api1 = {
 		"endpoint1": {
 			"pathTemplate":"/crud/%s",
 			"templateParams": ["urlparam"],
+			"requestHeaders": {
+				"Content-type": "application/rtf",	//override the content-type by default
+				"Authentication": ""				//allow caller to write Authentication header
+			},
 			"update": {
 				"method": "POST",
 				"params": ["updateParam1", "updateParam2"]
@@ -41,6 +45,7 @@ window.API_CONFIG.api1 = {
 window.API_CONFIG.api2 = {
 	"options": {
 		"apiName": "API2",
+		"protocol": "https",
 		"domain": "domain-for-api2.com",
 		"path": "api2",
 		"methodTypes":["stream"]	//optional array of endpoint methods to use in addition to CRUD methods
