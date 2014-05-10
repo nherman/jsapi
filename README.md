@@ -11,6 +11,9 @@ Usage:
 
 	var newAPI = window.JSAPI.create(APIConfiguration);
 	newAPI.endPointName.read({
+		headerData: {
+			"Request-header": "headervalue"
+		},
 		urlData: {
 			"url1": "data"
 		},
