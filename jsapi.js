@@ -37,12 +37,47 @@ window.JSAPI = window.JSAPI || (function() {
 		    return false;
 		},
 
-		/* helper function for copying parameters from one object to another */
-		extend = function(obj, extension){
-			var key;
+		/* 
+			Extend:	helper function for copying parameters from one object to another.
+			Not a "full" object copy.  Array are assume to be flat, and contain only strings. Object depth limited
+		*/
+		extend = function(obj, extension, overwrite, depth){
+			var i, j, key,
+				maxDepth=1; //keep copies shallow in case there's a bug in the config
+			if (overwrite !== false) {
+				overwrite = true;
+			}
+			if (depth === undefined) {
+				depth = 0;
+			}
 			for (key in extension){
 		        if (hasOwnProp.call(extension, key)) {
-					obj[key] = extension[key];
+
+	        		/* copy arrays - only arrays of strings allowed */
+	        		if (extension[key] instanceof Array) {
+	        			if (!obj[key] instanceof Array && !overwrite) continue;
+	        			/* http://stackoverflow.com/questions/1584370 */
+	        			obj[key] = (obj[key] || []).concat(extension[key]);
+	        			for (i=0; i<obj[key].length; ++i) {
+	        				for (j=i+1; j<obj[key].length; ++j) {
+	        					if (obj[key][i] === obj[key][j]) {
+	        						obj[key].splice(j--,1);
+	        					}
+	        				}
+		        		}
+		        	} else if (extension[key] instanceof Object) {
+	        			if (!obj[key] instanceof Object && !overwrite) continue;
+
+	        			obj[key] = obj[key] || {};
+	        			if (depth <= maxDepth) {
+		        			extend(obj[key],extension[key],overwrite,depth++);
+		        		}
+
+		        	} else if (obj[key] === undefined || overwrite) {
+						obj[key] = extension[key];
+					}
+
+					
 				}
 			}
 		},
@@ -131,11 +166,11 @@ window.JSAPI = window.JSAPI || (function() {
 
 			data = data || {};
 
+
 			/*
 				Merge pathTemplate string with urlData to create the endpoint URL
 			*/
 			url = this.getURL(data.urlData);
-
 
 			/* 
 				Join parameter data into a query string.
@@ -220,9 +255,15 @@ window.JSAPI = window.JSAPI || (function() {
 	function EndPoint(api, options) {
 		this.api = api;
 		this.options = {
-			pathTemplate: ""
+			pathTemplate: "",
+			requestHeaders: {}
 		};
 		extend(this.options, options);
+
+		/* Allow API to define default requestHeaders that are not defined in the endpoint config */
+		if (api.options.requestHeaders !== undefined) {
+			extend(this.options.requestHeaders, api.options.requestHeaders, false);
+		}
 
 	}
 
@@ -256,10 +297,12 @@ window.JSAPI = window.JSAPI || (function() {
 		this.options = {
 			apiName: "api" + new Date().getTime(),
 			domain: "",
-			path: "/r",
-			methodTypes: []
+			path: "/",
+			methodTypes: [],
+			requestHeaders: {}
 		};
 		extend(this.options, options);
+
 
 		/*
 			Handle non-CRUD method types by adding new method handlers to EndPoint Class
@@ -302,14 +345,21 @@ window.JSAPI = window.JSAPI || (function() {
 		* options: includes endpoint path and configurations for each method type
 	 */
 	API.prototype.add = function(name, options) {
-		if (this.methodTypes[name]) {
-			/* Alias CRUD and custom methods on the API object. */
-			this[name + "_endpoint"] = new EndPoint(this, options);
-			this[name] = function() {
-				this[name + "_endpoint"][name].apply(this[name + "_endpoint"],arguments);
+		var method, func;
+		this[name] = new EndPoint(this, options);
+
+		/* check for the alias option and alias endpoint methods directly on the API */
+		for (method in this.methodTypes) {
+			if (options[method] !== undefined &&
+				options[method].alias !== undefined &&
+				typeof options[method].alias === "string") {
+
+				func = this[name][method];
+				this[options[method].alias.replace(/\s+/g,'')] = function() {
+					func.apply(this[name],arguments);
+				}
+
 			}
-		} else {
-			this[name] = new EndPoint(this, options);
 		}
 	};
 
