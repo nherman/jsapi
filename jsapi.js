@@ -13,14 +13,6 @@ window.JSAPI = window.JSAPI || (function() {
 		/* map containing all loaded apis */
 		apiMap = {},
 
-		/* default list of method types to attached to API endpoints */
-		methodTypes = {
-			"create":true,
-			"read":true,
-			"update":true,
-			"delete":true
-		},
-
 		/* prevent calls to console.log from throwing an error in browsers that don't support it */
 		console = window.console || {log:function(){ return; }},
 
@@ -93,158 +85,6 @@ window.JSAPI = window.JSAPI || (function() {
 			return xhr;
 		};
 
-	/* factory:
-	 * creates handlers for each request type
-	 * param: type - method name
-	 * param: types - allowed method names
-	 */
-	function EndPointMethodFactory(type) {
-		type = type.toLowerCase();
-
-		if (type === "stream") {
-
-			/* Server Sent Events method
-			 * param: data = {
-			 *		callbacks: {}
-			 * }
-			 */
-			return function(data) {
-				var i, source,
-					options=this.options[type],
-					url="";
-
-
-				if (options === undefined ||
-						data === undefined ||
-						!hasOwn(data.callbacks)) {
-					return;
-				}
-
-
-				/*
-					Merge pathTemplate string with urlData to create the endpoint URL
-				*/
-				url = this.getURL(data.urlData);
-
-
-				if (!!window.EventSource) {
-					/* init EventSource Object */
-					source = new EventSource(url);
-
-					/* Assign Callbacks */
-					for (i in data.callbacks) {
-						if (hasOwnProp.call(data.callbacks,i) && typeof data.callbacks[i] === "function") {
-							source.addEventListener(i, data.callbacks[i], false);
-						}
-					}
-
-					return source;
-				}
-			};
-
-		}
-
-
-		/* CRUD method (or other method type, if endpoint.methodTypes is populated)
-		 * param: data = {
-				urlData: {},
-				paramData: {},
-				headerData: {},
-				callbacks: {}
-		 * }
-		 */
-		return function(data) {
-			var xhr,i,
-				options=this.options[type],
-				paramArray=[],
-				params="",
-				url="";
-
-			if (options === undefined) {
-				return;
-			}
-
-			data = data || {};
-
-
-			/*
-				Merge pathTemplate string with urlData to create the endpoint URL
-			*/
-			url = this.getURL(data.urlData);
-
-			/* 
-				Join parameter data into a query string.
-				Append to the URL if we're making a GET request
-			*/
-			if (data.paramData instanceof Object && options.params instanceof Array) {
-				for (i=0; i<options.params.length; i++) {
-					if (data.paramData[options.params[i]] !== undefined) {
-						paramArray.push(options.params[i] + "=" + data.paramData[options.params[i]]);
-					}
-				}
-				params = paramArray.join("&");
-
-				if (options.method === "GET" && params.length > 0) {
-					url += "?" + params;
-				}
-			}
-
-			/* 
-			 * Instantiate and configure the XHR object
-			 */
-			xhr = getXHR();
-			xhr.open(options.method, url);
-
-			/* always assign a content-type header */
-			if (options.method === "GET") {
-				xhr.setRequestHeader("Content-type", "application/json");
-			} else {
-				xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-			}
-
-			/* assign endpoint-specific request headers. will override content-type header */
-			if (options.requestHeaders instanceof Object) {
-				if (data.headerData instanceof Object) {
-					/* import header values specific to this method call */
-					for (i in data.headerData) {
-						if (hasOwnProp.call(data.headerData,i) && options.requestHeaders[i] !== undefined) {
-							options.requestHeaders[i] = data.headerData[i];
-						}
-					}
-				}
-
-				for (i in options.requestHeaders) {
-					if (hasOwnProp.call(options.requestHeaders,i) && typeof options.requestHeaders[i] === "string" && options.requestHeaders[i] !== "") {
-						xhr.setRequestHeader(i,options.requestHeaders[i]);
-					}
-				}
-			}
-
-			/*
-				Assign callbacks
-				xmlhttprequest2 supports:
-				* onloadstart
-				* onprogress
-				* onabort
-				* onerror
-				* onload
-				* ontimeout
-				* onloadend
-				*/
-			if (data.callbacks instanceof Object) {
-				for (i in data.callbacks) {
-					if (typeof data.callbacks[i] === "function") {
-						xhr[i] = data.callbacks[i];
-					}
-				}
-			}
-
-			/* pass params to send for POSTs.  Ignored for GETs */
-			xhr.send(params);
-
-			return xhr;
-		};
-	}
 
 	/***
 	 * API endpoint class
@@ -285,6 +125,157 @@ window.JSAPI = window.JSAPI || (function() {
 		return this.api.getURL(path);
 	};
 
+
+	/* stream
+	 * Server Sent Events endpoint method - initiates an eventsource stream
+	 * param: data = {
+	 *		callbacks: {}
+	 * }
+	 */
+	EndPoint.prototype.stream = function(type, data) {
+		var i, source,
+			options=this.options[type],
+			url="";
+
+
+		if (options === undefined ||
+			data === undefined ||
+			!hasOwn(data.callbacks)) {
+			return;
+		}
+
+		/*
+			Merge pathTemplate string with urlData to create the endpoint URL
+		*/
+		url = this.getURL(data.urlData);
+
+		if (!!window.EventSource) {
+			/* init EventSource Object */
+			source = new EventSource(url);
+
+			/* Assign Callbacks */
+			for (i in data.callbacks) {
+				if (hasOwnProp.call(data.callbacks,i) && typeof data.callbacks[i] === "function") {
+					source.addEventListener(i, data.callbacks[i], false);
+				}
+			}
+
+			return source;
+		}
+	};
+
+	/* http
+	 * makes a call to an http endpoint method
+	 * e.g. api.endpoint.read({
+	 * 			paramData: {},
+	 *			urlData: {},
+	 * 			headerData: {}
+	 * 		});
+	 */
+	EndPoint.prototype.http = function(type, data) {
+		var xhr,i,
+			options = this.options[type],
+			headers={},
+			paramArray=[],
+			params="",
+			url="";
+
+		if (options === undefined) {
+			return;
+		}
+
+		data = data || {};
+
+		/*
+			Merge pathTemplate string with urlData to create the endpoint URL
+		*/
+		url = this.getURL(data.urlData);
+
+		/* 
+			Join parameter data into a query string.
+			Append to the URL if we're making a GET request
+		*/
+		if (data.paramData instanceof Object && options.params instanceof Array) {
+			for (i=0; i<options.params.length; i++) {
+				if (data.paramData[options.params[i]] !== undefined) {
+					paramArray.push(options.params[i] + "=" + data.paramData[options.params[i]]);
+				}
+			}
+			params = paramArray.join("&");
+
+			if (options.method === "GET" && params.length > 0) {
+				url += "?" + params;
+			}
+		}
+
+		/* 
+		 * Instantiate and configure the XHR object
+		 */
+		xhr = getXHR();
+		xhr.open(options.method, url);
+
+		/* always assign a content-type header */
+		if (options.method === "GET") {
+			xhr.setRequestHeader("Content-type", "application/json");
+		} else {
+			xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+		}
+
+		/* assign endpoint/api-specific request headers. */
+		if (this.options.requestHeaders instanceof Object) {
+			for (i in this.options.requestHeaders) {
+				if (hasOwnProp.call(this.options.requestHeaders,i)) {
+					headers[i] = this.options.requestHeaders[i];
+				}
+			}
+		}
+
+		/* assign user defined headers */
+		if (data.headerData instanceof Object) {
+			/* import header values specific to this method call */
+			for (i in data.headerData) {
+				if (hasOwnProp.call(data.headerData,i)) {
+					headers[i] = data.headerData[i];
+				}
+			}
+		}
+
+		/* set headers on xhr */
+		for (i in headers) {
+			if (hasOwnProp.call(headers,i) && typeof headers[i] === "string") {
+				if (headers[i] === "") {
+					console.log("Error. Required request header missing: " + i);
+				} else {
+					xhr.setRequestHeader(i,headers[i]);
+				}
+			}
+		}
+
+		/*
+			Assign callbacks
+			xmlhttprequest2 supports:
+			* onloadstart
+			* onprogress
+			* onabort
+			* onerror
+			* onload
+			* ontimeout
+			* onloadend
+			*/
+		if (data.callbacks instanceof Object) {
+			for (i in data.callbacks) {
+				if (typeof data.callbacks[i] === "function") {
+					xhr[i] = data.callbacks[i];
+				}
+			}
+		}
+
+		/* pass params to send for POSTs.  Ignored for GETs */
+		xhr.send(params);
+
+		return xhr;
+	};
+
 	/***
 	 * API parent class
 	 * 
@@ -293,34 +284,13 @@ window.JSAPI = window.JSAPI || (function() {
 	 ***/
 	function API(options) {
 		var i;
-		this.methodTypes = methodTypes;
 		this.options = {
 			apiName: "api" + new Date().getTime(),
 			domain: "",
 			path: "/",
-			methodTypes: [],
 			requestHeaders: {}
 		};
 		extend(this.options, options);
-
-
-		/*
-			Handle non-CRUD method types by adding new method handlers to EndPoint Class
-		*/
-
-		if (this.options.methodTypes instanceof Array && this.options.methodTypes.length > 0) {
-			
-			for (i=0;i<this.options.methodTypes.length;i++) {
-
-				/* add method type to internal list of methodTypes  */
-				this.methodTypes[this.options.methodTypes[i]] = true;
-
-				/* Create new prototype method */
-				if (EndPoint.prototype[this.options.methodTypes[i]] === undefined) {
-					EndPoint.prototype[this.options.methodTypes[i]] = EndPointMethodFactory(this.options.methodTypes[i]);
-				}
-			}
-		}
 	}
 
 	/* getURL:
@@ -345,22 +315,61 @@ window.JSAPI = window.JSAPI || (function() {
 		* options: includes endpoint path and configurations for each method type
 	 */
 	API.prototype.add = function(name, options) {
-		var method, func;
-		this[name] = new EndPoint(this, options);
+		var methodType,
+			func,
+			ep,
+			isOverride=false;
 
-		/* check for the alias option and alias endpoint methods directly on the API */
-		for (method in this.methodTypes) {
-			if (options[method] !== undefined &&
-				options[method].alias !== undefined &&
-				typeof options[method].alias === "string") {
+		function streamMethodFactory(type) {
+			return function(data) {
+				this.stream(type,data);
+			}
+		}
 
-				func = this[name][method];
-				this[options[method].alias.replace(/\s+/g,'')] = function() {
-					func.apply(this[name],arguments);
+		function httpMethodFactory(type) {
+			return function(data) {
+				this.http(type,data);
+			};
+		}
+
+		/* instantiate endpoint */
+		ep = new EndPoint(this, options);
+
+		/* find all method to attach to endpoint */
+		for (methodType in options) {
+			if (hasOwnProp.call(options, methodType) && 
+				options[methodType] instanceof Object &&
+				options[methodType].method !== undefined) {
+
+				if (name === methodType) {
+					isOverride = true;
+				}
+
+				if (options[methodType].method.toUpperCase() === "STREAM") {
+					ep[methodType] = streamMethodFactory(methodType);
+				} else {
+					ep[methodType] = httpMethodFactory(methodType);
 				}
 
 			}
 		}
+
+		/* attach endpoint to api.
+			if endpoint contains a method that has the same name as the endpoint then
+			attach it to the api where the endpoint would normally go.
+
+			e.g. api.endpiont.endpoint() becomes api.endpoint()
+		*/
+		if (isOverride) {
+			this[name+"_hidden"] = ep;
+			this[name] = function() {
+				ep[name].apply(ep, arguments);
+			}
+		} else {
+			this[name] = ep;
+		}
+
+
 	};
 
 	/*
@@ -394,13 +403,6 @@ window.JSAPI = window.JSAPI || (function() {
 		}
 
 		return api;
-	}
-
-	/* Create CRUD methods */
-	for (methodType in methodTypes) {
-		if (hasOwnProp.call(methodTypes, methodType)) {
-			EndPoint.prototype[methodType] = EndPointMethodFactory(methodType);
-		}
 	}
 
 	/* EXPOSE PUBLIC MEMBERS */
