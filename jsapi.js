@@ -330,13 +330,13 @@ window.JSAPI = window.JSAPI || (function() {
 
 		function streamMethodFactory(type) {
 			return function(data) {
-				this.eventSource(type,data);
+				return this.eventSource(type,data);
 			}
 		}
 
 		function httpMethodFactory(type) {
 			return function(data) {
-				this.http(type,data);
+				return this.http(type,data);
 			};
 		}
 
