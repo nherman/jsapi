@@ -5,7 +5,6 @@ Generate Javascript methods that correspond to API endpoints
 
 Initializes API objects and stores them in a globally accessible map object
 called window.JSAPI.apis.  Each API consists of a collection of Endpoints.
-Each Endpoint contains four default methods: create(), read(), update(), delete().
 
 Usage:
 
@@ -32,13 +31,21 @@ Usage:
 			"apiName": "APIContent",
 			"domain": "localhost",
 			"path": "api",
-			"methodTypes":[] //optional array of endpoint methods to use in addition to CRUD methods
+			"requestHeaders": {
+				"required header name": "default value"
+			}
 		},
 		"endpoints": {
 			"endpoint1": {
 				"pathTemplate":"",
 				"templateParams": [],
+				"requestHeaders": {
+					"required header name": "default value overrides api defaults"
+				}
 				"update": {
+					"requestHeaders": {
+						"required header name": "default value overrides endpoint defaults"
+					},
 					"method": "POST",
 					"params": []
 				},
@@ -48,6 +55,16 @@ Usage:
 				"delete": {
 					"method": "DELETE",
 					"params": []
+				}
+			},
+			"endpoint2": {
+				"pathTemplate":"",
+				/* if method name equals endpoint name then the endpoint becomes the functions: api.endpoint2();
+				"endpoint2": {
+					method:"STREAM",	//stream method for Server Sent Events
+					callbacks: {
+						onload: function() {}
+					}
 				}
 			}
 		}

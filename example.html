@@ -38,7 +38,7 @@
 		}
 
 		/* call API endpoint */
-		var readResponse = MYAPIS.api1.endpoint1.read(options);
+		MYAPIS.api1.endpoint1.read(options);
 
 		options.paramData = {
 				"updateParam1": "changeme",
@@ -46,13 +46,13 @@
 		}
 		
 		/* each endpoint can have multiple methods */
-		var updateResponse = MYAPIS.api1.endpoint1.update(options);
+		MYAPIS.api1.endpoint1.update(options);
 
 
 
 		/*
 		 * CRUD methods are standard, but others can be defined.
-		 * Endpoints that have the same name as a valid method are mapped to the api object.
+		 * A method that has the same name as its endpoint will be mapped directly on the api object instead of the endpoint.
 	 	 */
 
 		/* acquire Server Sent Events stream from API2 */

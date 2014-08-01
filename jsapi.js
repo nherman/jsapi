@@ -132,7 +132,7 @@ window.JSAPI = window.JSAPI || (function() {
 	 *		callbacks: {}
 	 * }
 	 */
-	EndPoint.prototype.stream = function(type, data) {
+	EndPoint.prototype.eventSource = function(type, data) {
 		var i, source,
 			options=this.options[type],
 			url="";
@@ -221,24 +221,31 @@ window.JSAPI = window.JSAPI || (function() {
 			xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
 		}
 
-		/* assign endpoint/api-specific request headers. */
-		if (this.options.requestHeaders instanceof Object) {
-			for (i in this.options.requestHeaders) {
-				if (hasOwnProp.call(this.options.requestHeaders,i)) {
-					headers[i] = this.options.requestHeaders[i];
+		/* helper function for setting default headers */
+		function setHeaders(defaultHeaders) {
+			if (defaultHeaders instanceof Object) {
+				for (i in defaultHeaders) {
+					if (hasOwnProp.call(defaultHeaders,i)) {
+						headers[i] = defaultHeaders[i];
+					}
 				}
 			}
 		}
 
+		/*
+			assign endpoint/api-specific request headers.
+			this.options.requestHeaders => request header from api and endpoint configuration
+		*/
+		setHeaders(this.options.requestHeaders);
+
+		/*
+			Assign method request headers
+			options.requestHeaders => request headers from method configuration
+		*/
+		setHeaders(options.requestHeaders);
+
 		/* assign user defined headers */
-		if (data.headerData instanceof Object) {
-			/* import header values specific to this method call */
-			for (i in data.headerData) {
-				if (hasOwnProp.call(data.headerData,i)) {
-					headers[i] = data.headerData[i];
-				}
-			}
-		}
+		setHeaders(data.headerData);
 
 		/* set headers on xhr */
 		for (i in headers) {
@@ -318,11 +325,12 @@ window.JSAPI = window.JSAPI || (function() {
 		var methodType,
 			func,
 			ep,
+			reservedWords="http|eventSource|method|pathTemplate|templateParams|requestHeaders",
 			isOverride=false;
 
 		function streamMethodFactory(type) {
 			return function(data) {
-				this.stream(type,data);
+				this.eventSource(type,data);
 			}
 		}
 
@@ -335,9 +343,10 @@ window.JSAPI = window.JSAPI || (function() {
 		/* instantiate endpoint */
 		ep = new EndPoint(this, options);
 
-		/* find all method to attach to endpoint */
+		/* find all methods to attach to endpoint */
 		for (methodType in options) {
 			if (hasOwnProp.call(options, methodType) && 
+				reservedWords.indexOf(methodType) < 0 &&
 				options[methodType] instanceof Object &&
 				options[methodType].method !== undefined) {
 
