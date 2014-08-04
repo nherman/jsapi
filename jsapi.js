@@ -216,9 +216,9 @@ window.JSAPI = window.JSAPI || (function() {
 
 		/* always assign a content-type header */
 		if (options.method === "GET") {
-			xhr.setRequestHeader("Content-type", "application/json");
+			headers["Content-type"] = "application/json";
 		} else {
-			xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+			headers["Content-type"] = "application/x-www-form-urlencoded";
 		}
 
 		/* helper function for setting default headers */
