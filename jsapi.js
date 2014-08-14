@@ -177,7 +177,7 @@ window.JSAPI = window.JSAPI || (function() {
 			options = this.options[type],
 			headers={},
 			paramArray=[],
-			params="",
+			payload="",
 			url="";
 
 		if (options === undefined) {
@@ -191,34 +191,15 @@ window.JSAPI = window.JSAPI || (function() {
 		*/
 		url = this.getURL(data.urlData);
 
-		/* 
-			Join parameter data into a query string.
-			Append to the URL if we're making a GET request
+		/*
+			Request Headers
 		*/
-		if (data.paramData instanceof Object && options.params instanceof Array) {
-			for (i=0; i<options.params.length; i++) {
-				if (data.paramData[options.params[i]] !== undefined) {
-					paramArray.push(options.params[i] + "=" + data.paramData[options.params[i]]);
-				}
-			}
-			params = paramArray.join("&");
 
-			if (options.method === "GET" && params.length > 0) {
-				url += "?" + params;
-			}
-		}
-
-		/* 
-		 * Instantiate and configure the XHR object
-		 */
-		xhr = getXHR();
-		xhr.open(options.method, url);
-
-		/* always assign a content-type header */
+		/* always assign a content-type header... unless we're uploading a file, see below */
 		if (options.method === "GET") {
-			headers["Content-type"] = "application/json";
+			headers["Content-Type"] = "application/json";
 		} else {
-			headers["Content-type"] = "application/x-www-form-urlencoded";
+			headers["Content-Type"] = "application/x-www-form-urlencoded";
 		}
 
 		/* helper function for setting default headers */
@@ -246,6 +227,50 @@ window.JSAPI = window.JSAPI || (function() {
 
 		/* assign user defined headers */
 		setHeaders(data.headerData);
+
+
+		if (data.paramData !== undefined && data.paramData instanceof Object && options.params instanceof Array ) {
+			if (headers["Content-Type"] === "multipart/form-data") {
+
+				/*
+					For multipart uploads use FormData object
+				*/
+				payload = new FormData();
+				for (i=0; i<options.params.length; i++) {
+					if (data.paramData[options.params[i]] !== undefined) {
+						payload.append(options.params[i], data.paramData[options.params[i]]);
+					}
+				}
+
+				/* allow FormData to set the Content-Type automatically for multipart/form-data submisions */
+				delete headers["Content-Type"];
+
+			} else {
+
+				/* 
+					For all other content-types join parameter data into a query string.
+					Append to the URL if we're making a GET request
+				*/
+
+				for (i=0; i<options.params.length; i++) {
+					if (data.paramData[options.params[i]] !== undefined) {
+						paramArray.push(options.params[i] + "=" + encodeURIComponent(data.paramData[options.params[i]]));
+					}
+				}
+				payload = paramArray.join("&");
+
+				if (options.method === "GET" && payload.length > 0) {
+					url += "?" + payload;
+				}
+			}
+		}
+
+		/* 
+		 * Instantiate and configure the XHR object
+		 */
+		xhr = getXHR();
+		xhr.open(options.method, url);
+
 
 		/* set headers on xhr */
 		for (i in headers) {
@@ -277,8 +302,8 @@ window.JSAPI = window.JSAPI || (function() {
 			}
 		}
 
-		/* pass params to send for POSTs.  Ignored for GETs */
-		xhr.send(params);
+		/* pass payload to send for POSTs.  Ignored for GETs */
+		xhr.send(payload);
 
 		return xhr;
 	};
