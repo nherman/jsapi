@@ -353,15 +353,15 @@ window.JSAPI = window.JSAPI || (function() {
 			reservedWords="http|eventSource|method|pathTemplate|templateParams|requestHeaders",
 			isOverride=false;
 
-		function streamMethodFactory(type) {
+		function streamMethodFactory(context, type) {
 			return function(data) {
-				return this.eventSource(type,data);
+				return context.eventSource(type,data);
 			}
 		}
 
-		function httpMethodFactory(type) {
+		function httpMethodFactory(context, type) {
 			return function(data) {
-				return this.http(type,data);
+				return context.http(type,data);
 			};
 		}
 
@@ -380,9 +380,9 @@ window.JSAPI = window.JSAPI || (function() {
 				}
 
 				if (options[methodType].method.toUpperCase() === "STREAM") {
-					ep[methodType] = streamMethodFactory(methodType);
+					ep[methodType] = streamMethodFactory(ep, methodType);
 				} else {
-					ep[methodType] = httpMethodFactory(methodType);
+					ep[methodType] = httpMethodFactory(ep, methodType);
 				}
 
 			}
